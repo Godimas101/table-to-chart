@@ -19,6 +19,8 @@ A GitHub Actions tool that reads any date-indexed markdown table, generates roll
 - **Auto-commits all charts** — workflow pushes the updated SVGs after every relevant push
 - **Handles sparse data** — missing values, partial rows, and timestamps in date cells all work
 
+<img src="https://github.com/Godimas101/Godimas101/blob/main/images/screenshots/table-to-chart.png?raw=true" alt="Alt text" width="500">
+
 ---
 
 ## 📋 Table Requirements
