@@ -4,25 +4,26 @@
 
 > **"Your data is already in the table. The chart should write itself."**
 
-A GitHub Actions tool that reads any date-indexed markdown table, generates a rolling-window SVG chart, and commits it back to your repo automatically. Configure which columns to plot, drop in two files, embed an image tag — done.
+A GitHub Actions tool that reads any date-indexed markdown table, generates rolling-window SVG charts, and commits them back to your repo automatically. Configure which columns to plot, drop in two files, embed an image tag — done. Run the script multiple times in one workflow to generate multiple charts from the same table.
 
 ---
 
 ## 🚀 What It Does
 
 - **Works with any markdown table** — point it at the date column and the columns you want to plot
+- **Multiple charts from one table** — run the script multiple times in the same workflow, each with different column configs and output files
+- **Multiple lines per chart** — primary metric on the left axis, unlimited secondary metrics on the right
 - **Configurable rolling window** — last N months, set per-repo or overridden at run time
-- **Two-axis support** — primary metric on the left, optional secondary metric on the right
 - **Dark-themed SVG** — renders cleanly in GitHub's light and dark modes
-- **Linear trendline** — optional, on by default for the primary column
-- **Auto-commits the chart** — workflow pushes the updated SVG after every relevant push
+- **Linear trendline** — optional, on by default for the primary (left) column
+- **Auto-commits all charts** — workflow pushes the updated SVGs after every relevant push
 - **Handles sparse data** — missing values, partial rows, and timestamps in date cells all work
 
 ---
 
 ## 📋 Table Requirements
 
-The tool needs a standard markdown table with at least one date column and one numeric column. Columns can be in any order — you specify which ones to use by name or index.
+A standard markdown table with at least one date column and one numeric column. Columns can be in any order — you specify which ones to use by name or index.
 
 ```markdown
 | Date       | Steps | Calories | Sleep (hrs) |
@@ -36,6 +37,8 @@ Dates with timestamps work too:
 ```
 | 2026-03-03 06:43:50 | 211 | 27.0% |
 ```
+
+Files with multiple tables (e.g. a glossary above the data) are handled automatically — the script searches all tables for the one containing your date column.
 
 ---
 
@@ -54,19 +57,19 @@ your-repo/
 
 **2. Copy `workflow-template.yml`** into `.github/workflows/` and fill in your paths and column config (see below).
 
-**3. Embed the chart** in your markdown file wherever you want it to appear:
+**3. Embed the charts** in your markdown file wherever you want them to appear:
 
 ```markdown
 ![Chart](charts/chart.svg)
 ```
 
-**4. Push** — the workflow triggers, generates the SVG, and commits it back. GitHub renders it inline.
+**4. Push** — the workflow triggers, generates the SVGs, and commits them back. GitHub renders them inline.
 
 ---
 
 ## ⚙️ Configuration
 
-All configuration is via environment variables in the workflow file.
+All configuration is via environment variables set in the workflow file.
 
 ### Paths & Window
 
@@ -83,53 +86,100 @@ Columns can be specified as a **0-based index** or the **exact header name** (ca
 | Variable | Default | Description |
 |---|---|---|
 | `DATE_COL` | `0` | Column containing dates |
-| `Y1_COL` | `1` | Primary (left) y-axis column |
-| `Y2_COL` | *(blank)* | Secondary (right) y-axis column — leave blank to disable |
+| `Y1_COL` | `1` | Primary (left) y-axis column — trendline is drawn on this |
+| `Y2_COLS` | *(blank)* | Comma-separated right-axis columns — leave blank to disable |
 
 ### Labels & Appearance
 
 | Variable | Default | Description |
 |---|---|---|
 | `Y1_LABEL` | *(column header)* | Left axis label |
-| `Y2_LABEL` | *(column header)* | Right axis label |
-| `TITLE` | *(auto)* | Chart title — defaults to `{column} — Last N Months` |
+| `Y2_LABELS` | *(column headers)* | Comma-separated right axis labels, matching `Y2_COLS` order |
+| `Y2_AXIS_LABEL` | *(blank)* | Label for the right y-axis itself |
+| `TITLE` | *(auto)* | Chart title — defaults to `{Y1 column} — Last N Months` |
 | `STRIP_CHARS` | `%` | Characters to strip from values before parsing (e.g. `%` turns `24.8%` into `24.8`) |
 | `SHOW_TREND` | `true` | Draw a linear trendline on Y1 — `true` or `false` |
 
 ### Manual Runs
 
-You can trigger the workflow manually from the GitHub Actions tab and override `MONTHS` at run time — useful for experimenting with different window sizes.
+Trigger the workflow manually from the GitHub Actions tab to override `MONTHS` at run time — useful for experimenting with different window sizes.
 
 ---
 
 ## 📝 Example Configs
 
-**Weight + body fat from a health log:**
+**Single metric with trendline:**
 ```yaml
-DATE_COL: 'Date'
-Y1_COL:   'Weight'
-Y2_COL:   'Body Fat'
-Y1_LABEL: 'Weight (lbs)'
-Y2_LABEL: 'Body Fat %'
-TITLE:    'Weight Tracking'
-STRIP_CHARS: '%'
+DATE_COL:   'Date'
+Y1_COL:     'Weight'
+Y2_COLS:    ''
+Y1_LABEL:   'Weight (lbs)'
+TITLE:      'Weight'
+SHOW_TREND: 'true'
 ```
 
-**Step count from a fitness log:**
+**Multiple secondary lines:**
 ```yaml
-DATE_COL: '0'
-Y1_COL:   'Steps'
-Y2_COL:   'Calories'
-TITLE:    'Daily Activity'
+DATE_COL:      'Date'
+Y1_COL:        'Muscle'
+Y2_COLS:       'Body Fat,BMI'
+Y1_LABEL:      'Muscle %'
+Y2_LABELS:     'Body Fat %,BMI'
+Y2_AXIS_LABEL: '%'
+TITLE:         'Body Metrics'
+STRIP_CHARS:   '%'
+```
+
+**Step count with calories:**
+```yaml
+DATE_COL:    '0'
+Y1_COL:      'Steps'
+Y2_COLS:     'Calories'
+Y2_LABELS:   'Calories'
+TITLE:       'Daily Activity'
 STRIP_CHARS: ''
 ```
 
-**Single metric, no secondary axis:**
+---
+
+## 📊 Multiple Charts from One Table
+
+Run the script multiple times in the same workflow — each run gets its own env vars and output file. Embed multiple image tags in your markdown to display them all.
+
 ```yaml
-DATE_COL: 'Date'
-Y1_COL:   'Sleep (hrs)'
-Y2_COL:   ''
-SHOW_TREND: 'true'
+- name: Generate weight chart
+  env:
+    INPUT_FILE:  data/my-data.md
+    OUTPUT_FILE: data/charts/weight-chart.svg
+    Y1_COL:      'Weight'
+    Y2_COLS:     ''
+    TITLE:       'Weight'
+  run: python data/generate_chart.py
+
+- name: Generate metrics chart
+  env:
+    INPUT_FILE:  data/my-data.md
+    OUTPUT_FILE: data/charts/metrics-chart.svg
+    Y1_COL:      'Muscle'
+    Y2_COLS:     'Body Fat,BMI'
+    Y2_LABELS:   'Body Fat %,BMI'
+    TITLE:       'Body Metrics'
+  run: python data/generate_chart.py
+
+- name: Commit charts
+  run: |
+    git config user.name "github-actions[bot]"
+    git config user.email "github-actions[bot]@users.noreply.github.com"
+    git add data/charts/weight-chart.svg data/charts/metrics-chart.svg
+    git diff --cached --quiet || git commit -m "chore: update charts [skip ci]"
+    git push
+```
+
+Then in your markdown:
+
+```markdown
+![Weight](data/charts/weight-chart.svg)
+![Body Metrics](data/charts/metrics-chart.svg)
 ```
 
 ---
