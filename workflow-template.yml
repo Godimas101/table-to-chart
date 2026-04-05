@@ -1,0 +1,67 @@
+# ── table-to-chart: Markdown Table → SVG Chart ───────────────────────────────
+# 1. Copy this file to .github/workflows/ in your target repo
+# 2. Update the `paths` trigger and all env vars below to match your setup
+# 3. Embed the chart in your markdown: ![Chart](path/to/chart.svg)
+# 4. Push — the workflow runs, generates the SVG, and commits it back
+
+name: Generate Chart
+
+on:
+  push:
+    paths:
+      - 'path/to/your-data-file.md'   # ← update this
+  workflow_dispatch:
+    inputs:
+      months:
+        description: 'Rolling window in months'
+        default: '6'
+        required: false
+
+jobs:
+  generate-chart:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout repo
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install dependencies
+        run: pip install matplotlib numpy python-dateutil
+
+      - name: Generate chart
+        env:
+          # ── Window & paths ─────────────────────────────────────────────────
+          MONTHS: ${{ github.event.inputs.months || '6' }}
+          INPUT_FILE:  path/to/your-data-file.md      # ← update
+          OUTPUT_FILE: path/to/charts/chart.svg        # ← update
+
+          # ── Column selection (index or exact header name) ──────────────────
+          DATE_COL: '0'           # column containing dates
+          Y1_COL:   '1'           # primary (left) y-axis column
+          Y2_COL:   ''            # secondary (right) y-axis column — leave blank to disable
+
+          # ── Labels & title (leave blank to auto-generate from header names) ─
+          Y1_LABEL: ''
+          Y2_LABEL: ''
+          TITLE:    ''
+
+          # ── Value parsing ──────────────────────────────────────────────────
+          STRIP_CHARS: '%'        # characters to remove from values before parsing
+          SHOW_TREND:  'true'     # draw a linear trendline on Y1
+
+        run: python path/to/generate_chart.py         # ← update
+
+      - name: Commit chart
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add path/to/charts/chart.svg             # ← update
+          git diff --cached --quiet || git commit -m "chore: update chart [skip ci]"
+          git push
