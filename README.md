@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://capsule-render.vercel.app/api?type=slice&height=180&color=0:0B1021,45:0EA5E9,100:7C3AED&text=table-to-chart&fontColor=ffffff&fontSize=38&fontAlign=67&fontAlignY=28&rotate=11&desc=markdown%20table%20%E2%86%92%20SVG%20chart%20%E2%86%92%20auto-committed%20to%20your%20repo&descAlign=57&descAlignY=50&descSize=16" />
+  <img src="https://capsule-render.vercel.app/api?type=slice&height=180&color=0:0B1021,45:0EA5E9,100:7C3AED&text=Table%20To%20Chart&fontColor=ffffff&fontSize=38&fontAlign=67&fontAlignY=24&rotate=11&desc=markdown%20table%20%E2%86%92%20SVG%20chart%20%E2%86%92%20auto-committed%20to%20your%20repo&descAlign=57&descAlignY=42&descSize=16" />
 </p>
 
 > **"Your data is already in the table. The chart should write itself."**
